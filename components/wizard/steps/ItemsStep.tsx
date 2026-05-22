@@ -175,7 +175,6 @@ export default function ItemsStep({ items, onChange, onNext, onBack }: Props) {
                       Unit Price <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-gray-400 text-sm">$</span>
                       <input
                         type="number"
                         inputMode="decimal"
@@ -183,7 +182,7 @@ export default function ItemsStep({ items, onChange, onNext, onBack }: Props) {
                         step="0.01"
                         value={item.unitPrice || ''}
                         onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                        className={`form-input pl-6 ${itemErrors.unitPrice ? 'form-input-error' : ''}`}
+                        className={`form-input ${itemErrors.unitPrice ? 'form-input-error' : ''}`}
                         placeholder="0.00"
                       />
                     </div>
@@ -194,12 +193,11 @@ export default function ItemsStep({ items, onChange, onNext, onBack }: Props) {
                   <div>
                     <label className="form-label">Total</label>
                     <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-gray-400 text-sm">$</span>
                       <input
                         type="text"
                         readOnly
                         value={item.lineTotal.toFixed(2)}
-                        className="form-input pl-6 bg-white text-gray-700 cursor-default"
+                        className="form-input bg-white text-gray-700 cursor-default"
                       />
                     </div>
                   </div>
@@ -224,15 +222,15 @@ export default function ItemsStep({ items, onChange, onNext, onBack }: Props) {
           <div className="space-y-2 max-w-xs ml-auto">
             <div className="flex justify-between text-sm text-gray-600">
               <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm text-gray-600">
               <span>GST ({taxRate}%)</span>
-              <span>${tax.toFixed(2)}</span>
+              <span>{tax.toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-bold text-gray-900 text-base border-t border-gray-300 pt-2">
               <span>Total</span>
-              <span>${total.toFixed(2)}</span>
+              <span>{total.toFixed(2)}</span>
             </div>
           </div>
         </div>

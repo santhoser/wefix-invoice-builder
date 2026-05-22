@@ -1,10 +1,11 @@
--- WeFix Invoice Builder — Supabase PostgreSQL Schema
--- Run this in Supabase SQL Editor to set up the database
+-- WeFix Invoice Builder - Supabase PostgreSQL schema
+-- Regenerated from local .env company settings on 2026-05-22.
+-- Run this in the Supabase SQL Editor to set up or refresh the database objects.
 
--- ─── Extensions ──────────────────────────────────────────────────────────────
+-- Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ─── company_profile ─────────────────────────────────────────────────────────
+-- Company profile
 CREATE TABLE IF NOT EXISTS company_profile (
     id               uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_name     varchar(200) NOT NULL,
@@ -27,14 +28,14 @@ CREATE TABLE IF NOT EXISTS company_profile (
     updated_at       timestamptz NOT NULL DEFAULT now()
 );
 
--- ─── invoice_counters ─────────────────────────────────────────────────────────
--- Used for concurrency-safe invoice number generation
+-- Invoice counters
+-- Used for concurrency-safe invoice number generation.
 CREATE TABLE IF NOT EXISTS invoice_counters (
-    date_prefix varchar(10) PRIMARY KEY,  -- format: YYMM/DD
+    date_prefix varchar(10) PRIMARY KEY, -- format: YYMM/DD
     counter     integer NOT NULL DEFAULT 1
 );
 
--- ─── invoices ─────────────────────────────────────────────────────────────────
+-- Invoices
 CREATE TABLE IF NOT EXISTS invoices (
     id               uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     invoice_number   varchar(50)     NOT NULL UNIQUE,
@@ -62,11 +63,11 @@ CREATE TABLE IF NOT EXISTS invoices (
     updated_by       varchar(100)
 );
 
-CREATE INDEX IF NOT EXISTS idx_invoices_invoice_date    ON invoices(invoice_date);
-CREATE INDEX IF NOT EXISTS idx_invoices_customer_name   ON invoices(customer_name);
-CREATE INDEX IF NOT EXISTS idx_invoices_status          ON invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoices_invoice_date  ON invoices(invoice_date);
+CREATE INDEX IF NOT EXISTS idx_invoices_customer_name ON invoices(customer_name);
+CREATE INDEX IF NOT EXISTS idx_invoices_status        ON invoices(status);
 
--- ─── invoice_items ────────────────────────────────────────────────────────────
+-- Invoice items
 CREATE TABLE IF NOT EXISTS invoice_items (
     id          uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     invoice_id  uuid            NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
@@ -82,7 +83,7 @@ CREATE TABLE IF NOT EXISTS invoice_items (
 
 CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice_id ON invoice_items(invoice_id);
 
--- ─── invoice_files ────────────────────────────────────────────────────────────
+-- Invoice files
 CREATE TABLE IF NOT EXISTS invoice_files (
     id                  uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     invoice_id          uuid            NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
@@ -98,25 +99,25 @@ CREATE TABLE IF NOT EXISTS invoice_files (
     created_by          varchar(100)
 );
 
-CREATE INDEX IF NOT EXISTS idx_invoice_files_invoice_id      ON invoice_files(invoice_id);
-CREATE INDEX IF NOT EXISTS idx_invoice_files_invoice_type    ON invoice_files(invoice_id, file_type);
+CREATE INDEX IF NOT EXISTS idx_invoice_files_invoice_id   ON invoice_files(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_files_invoice_type ON invoice_files(invoice_id, file_type);
 
--- ─── email_log ────────────────────────────────────────────────────────────────
+-- Email log
 CREATE TABLE IF NOT EXISTS email_log (
     id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    invoice_id      uuid        NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
-    recipient_list  text        NOT NULL,
+    invoice_id      uuid         NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+    recipient_list  text         NOT NULL,
     subject         varchar(250) NOT NULL,
-    status          varchar(30) NOT NULL DEFAULT 'Pending',
+    status          varchar(30)  NOT NULL DEFAULT 'Pending',
     error_message   text,
     sent_at         timestamptz,
-    created_at      timestamptz NOT NULL DEFAULT now()
+    created_at      timestamptz  NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_email_log_invoice_id ON email_log(invoice_id);
 
--- ─── Function: get_next_invoice_counter ──────────────────────────────────────
--- Atomic counter increment for concurrency-safe invoice numbering
+-- Function: get_next_invoice_counter
+-- Atomic counter increment for concurrency-safe invoice numbering.
 CREATE OR REPLACE FUNCTION get_next_invoice_counter(p_date_prefix varchar)
 RETURNS integer
 LANGUAGE plpgsql
@@ -134,37 +135,108 @@ BEGIN
 END;
 $$;
 
--- ─── Seed: Default Company Profile ───────────────────────────────────────────
--- Edit these values to match WEFIX HANDYMAN actual details
+-- Seed: default company profile from .env
+-- Runtime Supabase keys, SMTP credentials, and app login secrets are intentionally
+-- not stored in SQL.
+WITH existing_profile AS (
+    SELECT id
+    FROM company_profile
+    ORDER BY created_at ASC, id ASC
+    LIMIT 1
+),
+updated_profile AS (
+    UPDATE company_profile
+    SET
+        company_name = 'WEFIX HANDYMAN',
+        address_line_1 = '35 Traeger Street',
+        address_line_2 = NULL,
+        suburb = 'Dunlop',
+        state = 'ACT',
+        pin = '2615',
+        phone = '0424 825 551',
+        email = 'wefixhandyman@yahoo.com',
+        abn = '41335134334',
+        account_name = 'WEFIXHANDYMAN',
+        bsb = '062 907',
+        account_number = '10366427',
+        pay_id = '0424825551',
+        contact_name = 'WeFix Support',
+        contact_phone = '0424825551',
+        updated_at = now()
+    WHERE id = (SELECT id FROM existing_profile)
+    RETURNING id
+)
 INSERT INTO company_profile (
-    company_name, address_line_1, address_line_2, suburb, state, pin,
-    phone, email, abn,
-    account_name, bsb, account_number, pay_id,
-    contact_name, contact_phone
+    company_name,
+    address_line_1,
+    address_line_2,
+    suburb,
+    state,
+    pin,
+    phone,
+    email,
+    abn,
+    account_name,
+    bsb,
+    account_number,
+    pay_id,
+    contact_name,
+    contact_phone
 )
 SELECT
     'WEFIX HANDYMAN',
-    '123 Service Road',
+    '35 Traeger Street',
     NULL,
-    'Melbourne',
-    'VIC',
-    '3000',
-    '0400 000 000',
-    'info@wefixhandyman.com.au',
-    '12 345 678 901',
-    'WEFIX HANDYMAN PTY LTD',
-    '063-000',
-    '10000000',
-    'info@wefixhandyman.com.au',
+    'Dunlop',
+    'ACT',
+    '2615',
+    '0424 825 551',
+    'wefixhandyman@yahoo.com',
+    '41335134334',
+    'WEFIXHANDYMAN',
+    '062 907',
+    '10366427',
+    '0424825551',
     'WeFix Support',
-    '0400 000 000'
-WHERE NOT EXISTS (SELECT 1 FROM company_profile LIMIT 1);
+    '0424825551'
+WHERE NOT EXISTS (SELECT 1 FROM updated_profile);
 
--- ─── Storage Bucket Setup (run in Supabase dashboard or via API) ─────────────
--- Create a bucket named 'invoice-files' with private access
--- In Supabase Dashboard: Storage > Create Bucket > Name: invoice-files, Public: false
+-- Storage bucket setup
+-- The app currently writes JSON and PDF files to the private bucket below.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.schemata
+        WHERE schema_name = 'storage'
+    ) THEN
+        INSERT INTO storage.buckets (
+            id,
+            name,
+            public,
+            file_size_limit,
+            allowed_mime_types
+        )
+        VALUES (
+            'invoice-files',
+            'invoice-files',
+            false,
+            NULL,
+            ARRAY['application/json', 'application/pdf']
+        )
+        ON CONFLICT (id) DO UPDATE
+        SET
+            name = EXCLUDED.name,
+            public = EXCLUDED.public,
+            file_size_limit = EXCLUDED.file_size_limit,
+            allowed_mime_types = EXCLUDED.allowed_mime_types;
+    END IF;
+END;
+$$;
 
--- ─── Row Level Security (optional — enable if using Supabase Auth) ───────────
+-- Row Level Security
+-- The app uses SUPABASE_SECRET_KEY server-side, which bypasses RLS. Enable and
+-- add policies here only if direct client-side database access is introduced.
 -- ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE invoice_items ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE invoice_files ENABLE ROW LEVEL SECURITY;

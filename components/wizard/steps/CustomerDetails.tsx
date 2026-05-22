@@ -98,7 +98,7 @@ export default function CustomerDetailsStep({ data, onChange, onNext, onBack }: 
                 value={data.suburb}
                 onChange={(e) => update('suburb', e.target.value)}
                 className={`form-input ${errors.suburb ? 'form-input-error' : ''}`}
-                placeholder="Melbourne"
+                placeholder="Dunlop"
               />
               {errors.suburb && <p className="form-error">{errors.suburb}</p>}
             </div>
@@ -133,7 +133,7 @@ export default function CustomerDetailsStep({ data, onChange, onNext, onBack }: 
                 value={data.pin}
                 onChange={(e) => update('pin', e.target.value.replace(/\D/g, ''))}
                 className={`form-input ${errors.pin ? 'form-input-error' : ''}`}
-                placeholder="3000"
+                placeholder="2615"
               />
               {errors.pin && <p className="form-error">{errors.pin}</p>}
             </div>
